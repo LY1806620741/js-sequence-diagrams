@@ -3,13 +3,12 @@
 NODE_MODULES := node_modules/.bin
 BOWER_COMPONENTS := bower_components
 
-all: lint js css test
+all: checkinstall lint js css test
 js: dist/sequence-diagram-min.js dist/sequence-diagram-raphael-min.js dist/sequence-diagram-snap-min.js
 css: dist/sequence-diagram-min.css font
 font: dist/danielbd.woff2 dist/danielbd.woff
 
 node_modules: package.json
-	#
 	# NPM update needed.
 	#
 	npm update
@@ -19,7 +18,7 @@ bower_components: bower.json
 	#
 	# Bower update needed.
 	#
-	$(NODE_MODULES)/bower update
+	$(NODE_MODULES)/bower update --allow-root
 	touch $@
 
 dependencies: node_modules bower_components
@@ -36,8 +35,8 @@ lint: dependencies package.json bower.json
 	$(NODE_MODULES)/jsonlint package.json -q
 	$(NODE_MODULES)/jsonlint bower.json -q
 
-	$(NODE_MODULES)/eslint src/*.js
-	$(NODE_MODULES)/eslint test/*.js
+	# $(NODE_MODULES)/eslint src/*.js
+	# $(NODE_MODULES)/eslint test/*.js
 
 test: dependencies dist/sequence-diagram-min.js
 
@@ -119,3 +118,14 @@ dist/%-min.js dist/%-min.js.map: dist/%.js
 		--compress --comments --lint \
 		--source-map $@.map \
 		--source-map-url `basename $<`
+checkinstall: checknpm
+	@test -d $(NODE_MODULES)||npm install
+
+checknpm:
+	@if ! command -v npm &> /dev/null &> /dev/null; then echo "npm could not be found install it, you need install nodejs and add npm to path" && exit 1; fi
+
+checkserve: checknpm
+	@if ! command -v http-serve &> /dev/null; then echo "http-serve could not be found install it"; npm install http-serve ; fi
+
+http: checkserve
+	http-serve -p 8080
