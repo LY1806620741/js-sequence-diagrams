@@ -26,8 +26,10 @@
 "title"           { this.begin('title'); return 'title'; }
 <title>[^\r\n]+   { this.popState(); return 'MESSAGE'; }
 ","               return ',';
-[^\->:,\r\n"]+    return 'ACTOR';
+[^{}\->:,\r\n"]+    return 'ACTOR';
 \"[^"]+\"         return 'ACTOR';
+\{                return 'LPARTITION';
+\}                return 'RPARTITION';
 "--"              return 'DOTLINE';
 "-"               return 'LINE';
 ">>"              return 'OPENARROW';
@@ -61,6 +63,7 @@ statement
 	| signal               { yy.parser.yy.addSignal($1); }
 	| note_statement       { yy.parser.yy.addSignal($1); }
 	| 'title' message      { yy.parser.yy.setTitle($2);  }
+	| element              {                             }
 	;
 
 note_statement
@@ -81,6 +84,12 @@ placement
 signal
 	: actor signaltype actor message
 	{ $$ = new Diagram.Signal($1, $2, $3, $4); }
+	;
+element
+	: ACTOR LPARTITION MESSAGE  { $$ = yy.parser.yy.startBlock($1,$3); }
+	| ACTOR LPARTITION  { $$ = yy.parser.yy.startBlock($1); }
+	| RPARTITION ACTOR LPARTITION { $$ = yy.parser.yy.midBlock($2); }
+	| RPARTITION { $$ = yy.parser.yy.endBlock($1); }
 	;
 
 actor

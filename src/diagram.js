@@ -9,6 +9,7 @@ function Diagram() {
   this.title   = undefined;
   this.actors  = [];
   this.signals = [];
+  this.blocks = [];
 }
 /*
  * Return an existing actor with this alias, or creates a new one with alias and name.
@@ -53,6 +54,19 @@ Diagram.prototype.setTitle = function(title) {
 Diagram.prototype.addSignal = function(signal) {
   this.signals.push(signal);
 };
+
+Diagram.prototype.startBlock = function(name,title){
+  this.blocks.push([{index:this.actors.length,value:title,type:0}]);//title
+  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:1});//start
+}
+
+Diagram.prototype.midBlock = function(name){
+  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:2});//mid
+}
+
+Diagram.prototype.endBlock = function(name){
+  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:3});//end
+}
 
 Diagram.Actor = function(alias, name, index) {
   this.alias = alias;
