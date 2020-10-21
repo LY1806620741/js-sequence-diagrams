@@ -86,7 +86,7 @@ signal
 	{ $$ = new Diagram.Signal($1, $2, $3, $4); }
 	;
 element
-	: ACTOR LPARTITION MESSAGE  { $$ = yy.parser.yy.startBlock($1,$3); }
+	: ACTOR LPARTITION ACTOR  { $$ = yy.parser.yy.startBlock($1,$3); }
 	| ACTOR LPARTITION  { $$ = yy.parser.yy.startBlock($1); }
 	| RPARTITION ACTOR LPARTITION { $$ = yy.parser.yy.midBlock($2); }
 	| RPARTITION { $$ = yy.parser.yy.endBlock($1); }
