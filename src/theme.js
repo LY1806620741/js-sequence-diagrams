@@ -37,6 +37,7 @@ var SELF_SIGNAL_WIDTH = 20; // How far out a self signal goes
 var PLACEMENT = Diagram.PLACEMENT;
 var LINETYPE  = Diagram.LINETYPE;
 var ARROWTYPE = Diagram.ARROWTYPE;
+var BLOCKTYPE = Diagram.BLOCKTYPE;
 
 var ALIGN_LEFT   = 0;
 var ALIGN_CENTER = 1;
@@ -172,6 +173,7 @@ _.extend(BaseTheme.prototype, {
     this.drawTitle();
     this.drawActors(y);
     this.drawSignals(y + this.actorsHeight_);
+    this.drawBlocks();
   },
 
   layout: function() {
@@ -180,6 +182,7 @@ _.extend(BaseTheme.prototype, {
     var font    = this.font_;
     var actors  = diagram.actors;
     var signals = diagram.signals;
+    var blocks = diagram.blocks;
 
     diagram.width  = 0; // min width
     diagram.height = 0; // min height

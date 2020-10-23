@@ -10,6 +10,8 @@ function Diagram() {
   this.actors  = [];
   this.signals = [];
   this.blocks = [];
+  this.blocksNestingCount = []//block嵌套计数
+  this.blocksNestingCount.last=function(){return this[this.length-1]}
 }
 /*
  * Return an existing actor with this alias, or creates a new one with alias and name.
@@ -56,16 +58,38 @@ Diagram.prototype.addSignal = function(signal) {
 };
 
 Diagram.prototype.startBlock = function(name,title){
-  this.blocks.push([{index:this.actors.length,value:title,type:0}]);//title
-  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:1});//start
+  //初始化block属性
+  //block{
+  //     child:[block or innerline] 子层嵌套
+  //     depth:深度、用于计算布局
+  //     sindex:开始signals计数
+  //     eindex:结束signals计数，用于绘图边界
+  // }
+  a={sindex:this.signals.length,title:title,text:name,child:[],type:BLOCKTYPE.BLOCK,eindex:-1,depth:1}
+  if(this.blocksNestingCount.length==0){//如果是第一层嵌套加入blocks列表
+    this.blocks.push(a);
+  }else{//如果是嵌套放入最后层子层
+    this.blocksNestingCount.last().child.push(a);
+  }
+  this.blocksNestingCount.push(a);//放入未关闭计数
 }
 
 Diagram.prototype.midBlock = function(name){
-  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:2});//mid
+  if (this.blocksNestingCount.length>0){
+    this.blocksNestingCount.last().child.push({type:BLOCKTYPE.BLOCKTEXT,text:name,index:this.signals.length});
+  }
 }
 
 Diagram.prototype.endBlock = function(name){
-  this.blocks[this.blocks.length-1].push({index:this.actors.length,value:name,type:3});//end
+  if(this.blocksNestingCount.length>0){
+    //关闭最后一层块嵌套并获取深度
+    this.blocksNestingCount.last().eindex=this.signals.length;
+    var depth=this.blocksNestingCount.pop().depth+1;
+    //更新当前最深块深度
+    if (this.blocksNestingCount.length>0){
+      this.blocksNestingCount.last().depth=depth;
+    }
+  }
 }
 
 Diagram.Actor = function(alias, name, index) {
@@ -122,6 +146,11 @@ Diagram.PLACEMENT = {
   RIGHTOF: 1,
   OVER: 2
 };
+
+Diagram.BLOCKTYPE = {
+  BLOCK: 0,
+  BLOCKTEXT: 1
+}
 
 // Some older browsers don't have getPrototypeOf, thus we polyfill it
 // https://github.com/bramp/js-sequence-diagrams/issues/57
