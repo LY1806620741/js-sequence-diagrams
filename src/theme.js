@@ -25,6 +25,12 @@ var ACTOR_PADDING  = 10; // Padding inside a actor
 var SIGNAL_MARGIN  = 5; // Margin around a signal
 var SIGNAL_PADDING = 5; // Padding inside a signal
 
+var BLOCK_MARGIN  = 5; // 块外边距
+var BLOCK_PADDING = 5; // 块内边距
+
+var DEEP_MARGIN  = 5; // 嵌套深度外边距
+var DEEP_PADDING = 5; // 嵌套深度内边距
+
 var NOTE_MARGIN   = 10; // Margin around a note
 var NOTE_PADDING  = 5; // Padding inside a note
 var NOTE_OVERLAP  = 15; // Overlap when using a "note over A,B"
@@ -157,6 +163,7 @@ _.extend(BaseTheme.prototype, {
 
     this.actorsHeight_  = 0;
     this.signalsHeight_ = 0;
+    this.blocksHeight_ = 0;
     this.title_ = undefined; // hack - This should be somewhere better
   },
 
@@ -173,7 +180,6 @@ _.extend(BaseTheme.prototype, {
     this.drawTitle();
     this.drawActors(y);
     this.drawSignals(y + this.actorsHeight_);
-    this.drawBlocks();
   },
 
   layout: function() {
@@ -299,6 +305,57 @@ _.extend(BaseTheme.prototype, {
       this.signalsHeight_ += s.height;
     }, this));
 
+     //map block为行号
+    delete diagram.blocksNestingCount
+    //拍扁处理列表
+    flatchild=blocklist=>blocklist.flatMap(block=>block.child!==undefined&&block.child.length>0?[block,...flatchild(block.child)]:block)
+    blocklist=flatchild(blocks);
+
+    _.each(blocklist, _.bind(function(s) {
+      // Indexes of the left and right actors involved
+
+      s.height=0;
+      s.width=0;
+
+      if (s.type == BLOCKTYPE.BLOCK) {
+        
+        //计算title大小
+        if (s.title!==undefined){
+          var bb = this.textBBox(s.title, font);
+          s.title.TextBB = bb;
+          s.titlewidth = bb.width;
+          s.titleheight = bb.height;
+          s.titleheight += (BLOCK_MARGIN + BLOCK_PADDING) * 2;
+          s.height += s.titleheight;
+        }
+
+        //计算text
+        var bb = this.textBBox(s.text, font);
+        s.textBB = bb;
+        var textwidth = bb.width;
+        s.textheight  = bb.height;
+        s.width = Math.max(textwidth,s.width);
+        s.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+        s.textheight += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+        s.height += s.textheight;
+
+      } else if (s.type == BLOCKTYPE.BLOCKTEXT) {
+        var bb = this.textBBox(s.text, font);
+        s.textBB = bb;
+        s.width = bb.width;
+        s.height  += bb.height;
+        s.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+        s.height += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+      } else {
+        throw new Error('Unhandled block type:' + s.type);
+      }
+
+      this.blocksHeight_ += s.height;
+
+      //计算child宽度
+
+    }, this));
+
     // Re-jig the positions
     var actorsX = 0;
     _.each(actors, function(a) {
@@ -324,7 +381,7 @@ _.extend(BaseTheme.prototype, {
 
     // TODO Refactor a little
     diagram.width  += 2 * DIAGRAM_MARGIN;
-    diagram.height += 2 * DIAGRAM_MARGIN + 2 * this.actorsHeight_ + this.signalsHeight_;
+    diagram.height += 2 * DIAGRAM_MARGIN + 2 * this.actorsHeight_ + this.signalsHeight_ + this.blocksHeight_;
 
     return this;
   },
@@ -347,13 +404,13 @@ _.extend(BaseTheme.prototype, {
       this.drawActor(a, y, this.actorsHeight_);
 
       // Bottom box
-      this.drawActor(a, y + this.actorsHeight_ + this.signalsHeight_, this.actorsHeight_);
+      this.drawActor(a, y + this.actorsHeight_ + this.signalsHeight_ + this.blocksHeight_, this.actorsHeight_);
 
       // Veritical line
       var aX = getCenterX(a);
       this.drawLine(
        aX, y + this.actorsHeight_ - ACTOR_MARGIN,
-       aX, y + this.actorsHeight_ + ACTOR_MARGIN + this.signalsHeight_);
+       aX, y + this.actorsHeight_ + ACTOR_MARGIN + this.signalsHeight_ + this.blocksHeight_);
     }, this));
   },
 
@@ -363,9 +420,15 @@ _.extend(BaseTheme.prototype, {
     this.drawTextBox(actor, actor.name, ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
   },
 
+  drawBlock: function(index, offsetY){
+    // if (index ==)
+  },
+
   drawSignals: function(offsetY) {
     var y = offsetY;
-    _.each(this.diagram.signals, _.bind(function(s) {
+    _.each(this.diagram.signals, _.bind(function(s,index) {
+      //检查是否block
+      this.drawBlock(index,y);
       // TODO Add debug mode, that draws padding/margin box
       if (s.type == 'Signal') {
         if (s.isSelf()) {

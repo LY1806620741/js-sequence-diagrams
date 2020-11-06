@@ -16,6 +16,7 @@ statement ::=
 		| 'over' (actor | actor ',' actor)
 		) ':' message
 	| actor ( '-' | '--' ) ( '>' | '>>' )? actor ':' message
+	| (block '{' title?|'}' block '{'| '}')
 	)
 
 /*

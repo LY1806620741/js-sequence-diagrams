@@ -69,6 +69,7 @@ Diagram.prototype.startBlock = function(name,title){
   if(this.blocksNestingCount.length==0){//如果是第一层嵌套加入blocks列表
     this.blocks.push(a);
   }else{//如果是嵌套放入最后层子层
+    a.parent=this.blocksNestingCount.last();
     this.blocksNestingCount.last().child.push(a);
   }
   this.blocksNestingCount.push(a);//放入未关闭计数
