@@ -10,8 +10,8 @@ function Diagram() {
   this.actors  = [];
   this.signals = [];
   this.blocks = [];
-  this.blocksNestingCount = []//block嵌套计数
-  this.blocksNestingCount.last=function(){return this[this.length-1]}
+  this.blocksNestingStack = [];//block栈堆
+  Array.prototype.last=function(){return this.length>0?this[this.length-1]:null};
 }
 /*
  * Return an existing actor with this alias, or creates a new one with alias and name.
@@ -55,40 +55,42 @@ Diagram.prototype.setTitle = function(title) {
 
 Diagram.prototype.addSignal = function(signal) {
   this.signals.push(signal);
+  if (this.blocksNestingStack.length>0){this.blocksNestingStack.last().partition.last().child.push(signal);}
 };
 
 Diagram.prototype.startBlock = function(name,title){
   //初始化block属性
   //block{
-  //     child:[block or innerline] 子层嵌套
+  //     title: 标题
+  //     partition: 分区
   //     depth:深度、用于计算布局
-  //     sindex:开始signals计数
-  //     eindex:结束signals计数，用于绘图边界
   // }
-  a={sindex:this.signals.length,title:title,text:name,child:[],type:BLOCKTYPE.BLOCK,eindex:-1,depth:1}
-  if(this.blocksNestingCount.length==0){//如果是第一层嵌套加入blocks列表
-    this.blocks.push(a);
-  }else{//如果是嵌套放入最后层子层
-    a.parent=this.blocksNestingCount.last();
-    this.blocksNestingCount.last().child.push(a);
+  // partition{ 分区、闭包、花括号内
+  //    text: 文字
+  //    child: 子层
+  //}
+  block={title:title,partition:[{text:name,child:[]}],depth:1}
+  if(this.blocksNestingStack.length==0){//如果未关闭栈堆为空，即无嵌套放入首层
+    this.blocks.push(block);
+  }else{//如果是嵌套放入当前嵌套子层
+    this.blocksNestingStack.last().partition.last().child.push(block);
   }
-  this.blocksNestingCount.push(a);//放入未关闭计数
+  this.blocksNestingStack.push(block);//加入未关闭嵌套栈堆
 }
 
 Diagram.prototype.midBlock = function(name){
-  if (this.blocksNestingCount.length>0){
-    this.blocksNestingCount.last().child.push({type:BLOCKTYPE.BLOCKTEXT,text:name,index:this.signals.length});
+  if (this.blocksNestingStack.length>0){//未关闭栈堆
+    this.blocksNestingStack.last().partition.push({text:name,child:[]});
   }
 }
 
 Diagram.prototype.endBlock = function(name){
-  if(this.blocksNestingCount.length>0){
-    //关闭最后一层块嵌套并获取深度
-    this.blocksNestingCount.last().eindex=this.signals.length;
-    var depth=this.blocksNestingCount.pop().depth+1;
+  if(this.blocksNestingStack.length>0){
+    //出栈最后一层块嵌套并获取深度
+    var depth=this.blocksNestingStack.pop().depth+1;
     //更新当前最深块深度
-    if (this.blocksNestingCount.length>0){
-      this.blocksNestingCount.last().depth=depth;
+    if (this.blocksNestingStack.length>0){
+      this.blocksNestingStack.last().depth=depth;
     }
   }
 }
@@ -202,6 +204,7 @@ Diagram.parse = function(input) {
 
   // Then clean up the parseError key that a user won't care about
   delete diagram.parseError;
+  delete diagram.blocksNestingStack;
   return diagram;
 };
 

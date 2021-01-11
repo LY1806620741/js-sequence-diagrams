@@ -179,7 +179,14 @@ _.extend(BaseTheme.prototype, {
 
     this.drawTitle();
     this.drawActors(y);
-    this.drawSignals(y + this.actorsHeight_);
+    this.drawBlock(y);
+  },
+
+  drawBlock: function(y){
+    blocklist.forEach(element => {
+      
+    });
+    // this.drawSignals(y + this.actorsHeight_);
   },
 
   layout: function() {

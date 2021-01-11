@@ -125,7 +125,7 @@ checknpm:
 	@if ! command -v npm &> /dev/null &> /dev/null; then echo "npm could not be found install it, you need install nodejs and add npm to path" && exit 1; fi
 
 checkserve: checknpm
-	@if ! command -v http-serve &> /dev/null; then echo "http-serve could not be found install it"; npm install http-serve ; fi
+	@if ! command -v http-serve &> /dev/null; then echo "http-serve could not be found install it"; npm install -g http-serve ; fi
 
 http: checkserve
 	http-serve -p 8080
