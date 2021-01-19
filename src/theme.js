@@ -179,15 +179,23 @@ _.extend(BaseTheme.prototype, {
 
     this.drawTitle();
     this.drawActors(y);
-    this.drawBlock(y);
+    this.drawBlocks(y+this.actorsHeight_);
   },
 
-  drawBlock: function(y){
-    blocklist.forEach(element => {
-      
-    });
-    // this.drawSignals(y + this.actorsHeight_);
+  drawBlocks: function(y){
+    _.each(this.diagram.blocks, _.bind(function(block) {
+      this.drawBlock(block,y)
+      // this.drawSignals(y + this.actorsHeight_);
+    },this));
   },
+
+  drawBlock: function(block,y){
+    if (block.title != undefined){
+      this.drawTextBox({x:0,y:0,width:40,height:30}, block.title,ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
+    }
+    // this.drawTextBox(actor, actor.name, ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
+  },
+
 
   layout: function() {
     // Local copies
@@ -229,6 +237,7 @@ _.extend(BaseTheme.prototype, {
       this.actorsHeight_ = Math.max(a.height, this.actorsHeight_);
     }, this));
 
+    //确认参与者距离
     function actorEnsureDistance(a, b, d) {
       assert(a < b, 'a must be less than or equal to b');
 
@@ -246,129 +255,114 @@ _.extend(BaseTheme.prototype, {
       }
     }
 
-    _.each(signals, _.bind(function(s) {
-      // Indexes of the left and right actors involved
-      var a;
-      var b;
-
-      var bb = this.textBBox(s.message, font);
-
-      s.textBB = bb;
-      s.width   = bb.width;
-      s.height  = bb.height;
-
-      var extraWidth = 0;
-
-      if (s.type == 'Signal') {
-
-        s.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-        s.height += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-
-        if (s.isSelf()) {
-          // TODO Self signals need a min height
-          a = s.actorA.index;
-          b = a + 1;
-          s.width += SELF_SIGNAL_WIDTH;
-        } else {
-          a = Math.min(s.actorA.index, s.actorB.index);
-          b = Math.max(s.actorA.index, s.actorB.index);
-        }
-
-      } else if (s.type == 'Note') {
-        s.width  += (NOTE_MARGIN + NOTE_PADDING) * 2;
-        s.height += (NOTE_MARGIN + NOTE_PADDING) * 2;
-
-        // HACK lets include the actor's padding
-        extraWidth = 2 * ACTOR_MARGIN;
-
-        if (s.placement == PLACEMENT.LEFTOF) {
-          b = s.actor.index;
-          a = b - 1;
-        } else if (s.placement == PLACEMENT.RIGHTOF) {
-          a = s.actor.index;
-          b = a + 1;
-        } else if (s.placement == PLACEMENT.OVER && s.hasManyActors()) {
-          // Over multiple actors
-          a = Math.min(s.actor[0].index, s.actor[1].index);
-          b = Math.max(s.actor[0].index, s.actor[1].index);
-
-          // We don't need our padding, and we want to overlap
-          extraWidth = -(NOTE_PADDING * 2 + NOTE_OVERLAP * 2);
-
-        } else if (s.placement == PLACEMENT.OVER) {
-          // Over single actor
-          a = s.actor.index;
-          actorEnsureDistance(a - 1, a, s.width / 2);
-          actorEnsureDistance(a, a + 1, s.width / 2);
-          this.signalsHeight_ += s.height;
-
-          return; // Bail out early
-        }
-      } else {
-        throw new Error('Unhandled signal type:' + s.type);
-      }
-
-      actorEnsureDistance(a, b, s.width + extraWidth);
-      this.signalsHeight_ += s.height;
-    }, this));
-
-     //map block为行号
-    delete diagram.blocksNestingCount
-    //拍扁处理列表
-    flatchild=blocklist=>blocklist.flatMap(block=>block.child!==undefined&&block.child.length>0?[block,...flatchild(block.child)]:block)
-    blocklist=flatchild(blocks);
-
-    _.each(blocklist, _.bind(function(s) {
+    function layoutblock(b) {
       // Indexes of the left and right actors involved
 
-      s.height=0;
-      s.width=0;
+      b.height=0;
+      b.width=0;
 
-      if (s.type == BLOCKTYPE.BLOCK) {
         
-        //计算title大小
-        if (s.title!==undefined){
-          var bb = this.textBBox(s.title, font);
-          s.title.TextBB = bb;
-          s.titlewidth = bb.width;
-          s.titleheight = bb.height;
-          s.titleheight += (BLOCK_MARGIN + BLOCK_PADDING) * 2;
-          s.height += s.titleheight;
-        }
-
-        //计算text
-        var bb = this.textBBox(s.text, font);
-        s.textBB = bb;
-        var textwidth = bb.width;
-        s.textheight  = bb.height;
-        s.width = Math.max(textwidth,s.width);
-        s.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-        s.textheight += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-        s.height += s.textheight;
-
-      } else if (s.type == BLOCKTYPE.BLOCKTEXT) {
-        var bb = this.textBBox(s.text, font);
-        s.textBB = bb;
-        s.width = bb.width;
-        s.height  += bb.height;
-        s.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-        s.height += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
-      } else {
-        throw new Error('Unhandled block type:' + s.type);
+      //计算title大小
+      if (b.title!==undefined){
+        var bb = this.textBBox(b.title, font);
+        b.title.TextBB = bb;
+        b.titlewidth = bb.width;
+        b.titleheight = bb.height;
+        b.titleheight += (BLOCK_MARGIN + BLOCK_PADDING) * 2;
+        b.height += b.titleheight;
       }
 
-      this.blocksHeight_ += s.height;
+      _.each(b.partition,_.bind(function(p){
+        // 计算text
+        var bb = this.textBBox(p.text, font);
+        p.textBB = bb;
+        // 计算childrenm
+        _.each(p.child, _.bind(function(c) {
+          if(c.depth>0){layoutblock.call(this,c);return;}
+          // Indexes of the left and right actors involved
+          var a;
+          var b;
+    
+          var bb = this.textBBox(c.message, font);
+    
+          c.textBB = bb;
+          c.width   = bb.width;
+          c.height  = bb.height;
+    
+          var extraWidth = 0;
+    
+          if (c.type == 'Signal') {
+    
+            c.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+            c.height += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+    
+            if (c.isSelf()) {              // TODO Self signals need a min height
+              a = c.actorA.index;
+              b = a + 1;
+              c.width += SELF_SIGNAL_WIDTH;
+            } else {
+              a = Math.min(c.actorA.index, c.actorB.index);
+              b = Math.max(c.actorA.index, c.actorB.index);
+            }
+    
+          } else if (c.type == 'Note') {
+            c.width  += (NOTE_MARGIN + NOTE_PADDING) * 2;
+            c.height += (NOTE_MARGIN + NOTE_PADDING) * 2;
+    
+            // HACK lets include the actor's padding
+            extraWidth = 2 * ACTOR_MARGIN;
+    
+            if (c.placement == PLACEMENT.LEFTOF) {
+              b = c.actor.index;
+              a = b - 1;
+            } else if (c.placement == PLACEMENT.RIGHTOF) {
+              a = c.actor.index;
+              b = a + 1;
+            } else if (c.placement == PLACEMENT.OVER && c.hasManyActors()) {
+              // Over multiple actors
+              a = Math.min(c.actor[0].index, c.actor[1].index);
+              b = Math.max(c.actor[0].index, c.actor[1].index);
+    
+              // We don't need our padding, and we want to overlap
+              extraWidth = -(NOTE_PADDING * 2 + NOTE_OVERLAP * 2);
+    
+            } else if (c.placement == PLACEMENT.OVER) {
+              // Over single actor
+              a = c.actor.index;
+              actorEnsureDistance(a - 1, a, c.width / 2);
+              actorEnsureDistance(a, a + 1, c.width / 2);
+              this.signalsHeight_ += c.height;
+    
+              return; // Bail out early
+            }
+          } else {
+            throw new Error('Unhandled signal type:' + c.type);
+          }
+    
+          actorEnsureDistance(a, b, c.width + extraWidth);
+          this.signalsHeight_ += c.height;
+        }, this));
+        var textwidth = bb.width;
+        p.textheight  = bb.height;
+        p.width = Math.max(textwidth,p.width);
+        p.width  += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+        p.textheight += (SIGNAL_MARGIN + SIGNAL_PADDING) * 2;
+        p.height += p.textheight;
+        // this.blocksHeight_ += s.height;
 
-      //计算child宽度
-
-    }, this));
+        //计算child宽度
+      },this));
+    };
+      
+    //计算block布局
+    _.each(blocks, _.bind(layoutblock, this));
 
     // Re-jig the positions
     var actorsX = 0;
     _.each(actors, function(a) {
       a.x = Math.max(actorsX, a.x);
 
-      // TODO This only works if we loop in sequence, 0, 1, 2, etc
+      // TODO This only works if we loop in sequence, 0, 1, 2, etc8i,
       _.each(a.distances, function(distance, b) {
         // lodash (and possibly others) do not like sparse arrays
         // so sometimes they return undefined
@@ -427,15 +421,9 @@ _.extend(BaseTheme.prototype, {
     this.drawTextBox(actor, actor.name, ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
   },
 
-  drawBlock: function(index, offsetY){
-    // if (index ==)
-  },
-
   drawSignals: function(offsetY) {
     var y = offsetY;
     _.each(this.diagram.signals, _.bind(function(s,index) {
-      //检查是否block
-      this.drawBlock(index,y);
       // TODO Add debug mode, that draws padding/margin box
       if (s.type == 'Signal') {
         if (s.isSelf()) {
