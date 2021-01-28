@@ -194,6 +194,13 @@ if (typeof Snap != 'undefined') {
       return this.pushToStack(rect);
     },
 
+    drawRectMissAngle: function(x, y, w, h, p) {
+      var x1=x+w;
+      var y1=y+h;
+      var frame = this.paper_.polygon([x, y],[x1, y],[x1, y1-p],[x1-p, y1],[x, y1],[x, y]).attr(RECT);
+      return this.pushToStack(frame);
+    },
+
     /**
      * Draws text with a optional white background
      * x,y (int) x,y top left point of the text, or the center of the text (depending on align param)
@@ -282,7 +289,12 @@ if (typeof Snap != 'undefined') {
     drawRect: function(x, y, w, h) {
       var rect = this.paper_.path(handRect(x, y, w, h)).attr(RECT);
       return this.pushToStack(rect);
-    }
+    },
+
+    drawRectMissAngle: function(x, y, w, h, p) {
+      var rectmissangle = this.paper_.path(handRectMissAngle(x, y, w, h,p)).attr(RECT)
+      return this.pushToStack(rectmissangle);
+    },
   });
 
   registerTheme('snapSimple', SnapTheme);

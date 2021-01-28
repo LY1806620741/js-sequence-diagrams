@@ -28,6 +28,11 @@ var SIGNAL_PADDING = 5; // Padding inside a signal
 var BLOCK_MARGIN  = 5; // 块外边距
 var BLOCK_PADDING = 5; // 块内边距
 
+var BLOCK_TITLE_MARGIN  = 2; // 块外边距
+var BLOCK_TITLE_PADDING = 2; // 块内边距
+
+var BLOCK_MISS_ANGLE_SIZE = 5; //缺角矩形缺角大小
+
 var DEEP_MARGIN  = 5; // 嵌套深度外边距
 var DEEP_PADDING = 5; // 嵌套深度内边距
 
@@ -139,6 +144,18 @@ function handRect(x, y, w, h) {
    wobble(x, y + h, x, y);
 }
 
+function handRectMissAngle(x, y, w, h, p) {
+  assert(_.every([x, y, w, h, p], _.isFinite), 'x, y, w, h, p must be numeric');
+  var x1=x+w;
+  var y1=y+h;
+  return 'M' + x + ',' + y +
+   wobble(x, y, x1, y) +
+   wobble(x1, y, x1, y1-p) +
+   wobble(x1, y1-p, x1-p, y1) +
+   wobble(x1-p, y1, x, y1)+
+   wobble(x, y1,x, y);
+}
+
 /**
  * Draws a wobbly (hand drawn) line
  */
@@ -190,10 +207,12 @@ _.extend(BaseTheme.prototype, {
   },
 
   drawBlock: function(block,y){
+    //标题
     if (block.title != undefined){
-      this.drawTextBox({x:0,y:0,width:40,height:30}, block.title,ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
+      block.title_.x=0;
+      block.title_.y=y;
+      this.drawBlockTilte(block.title_,block.title,BLOCK_TITLE_MARGIN, BLOCK_TITLE_PADDING,this._font,ALIGN_CENTER);
     }
-    // this.drawTextBox(actor, actor.name, ACTOR_MARGIN, ACTOR_PADDING, this.font_, ALIGN_CENTER);
   },
 
 
@@ -215,8 +234,8 @@ _.extend(BaseTheme.prototype, {
       title.textBB = bb;
       title.message = diagram.title;
 
-      title.width  = bb.width  + (TITLE_PADDING + TITLE_MARGIN) * 2;
-      title.height = bb.height + (TITLE_PADDING + TITLE_MARGIN) * 2;
+      title.width  = bb.width  + (BLOCK_TITLE_PADDING + BLOCK_TITLE_MARGIN) * 2;
+      title.height = bb.height + (BLOCK_TITLE_PADDING + BLOCK_TITLE_MARGIN) * 2;
       title.x = DIAGRAM_MARGIN;
       title.y = DIAGRAM_MARGIN;
 
@@ -264,12 +283,10 @@ _.extend(BaseTheme.prototype, {
         
       //计算title大小
       if (b.title!==undefined){
-        var bb = this.textBBox(b.title, font);
-        b.title.TextBB = bb;
-        b.titlewidth = bb.width;
-        b.titleheight = bb.height;
-        b.titleheight += (BLOCK_MARGIN + BLOCK_PADDING) * 2;
-        b.height += b.titleheight;
+        var title = b.title_ = {};
+        title.TextBB = this.textBBox(b.title, font);
+        title.width = title.TextBB.width + (TITLE_PADDING + TITLE_MARGIN) * 2;
+        title.height = title.TextBB.height + (TITLE_PADDING + TITLE_MARGIN) * 2;
       }
 
       _.each(b.partition,_.bind(function(p){
@@ -531,5 +548,26 @@ _.extend(BaseTheme.prototype, {
     }
 
     return this.drawText(x, y, text, font, align);
-  }
+  },
+
+  drawBlockTilte: function(box, text, margin,padding,font,align){
+    var x = box.x + margin;
+    var y = box.y + margin;
+    var w = box.width  - 2 * margin;
+    var h = box.height - 2 * margin;
+
+    //画缺角矩形
+    this.drawRectMissAngle(x,y,w,h,BLOCK_MISS_ANGLE_SIZE);
+
+    //写文字
+    if (align == ALIGN_CENTER) {
+      x = getCenterX(box);
+      y = getCenterY(box);
+    } else {
+      x += padding;
+      y += padding;
+    }
+    console.log(x,y);
+    return this.drawText(x, y, text, font, align);
+  },
 });
